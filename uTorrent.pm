@@ -6,6 +6,7 @@ use HTTP::Request::Common;
 use LWP::UserAgent;
 use JSON::XS;
 use HTML::TreeBuilder;
+use HTTP::Cookies;
 
 use 5.010000;
 use strict;
@@ -21,7 +22,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw();
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 
  our $token;
@@ -49,6 +50,7 @@ sub new {
 					'uTorrent',
 					$user => $pass
 				 );
+		$ua->cookie_jar(HTTP::Cookies::Netscape->new('file' => '/tmp/utorrent_cookies' ));
 		$api_url = "http://$host:$port/gui/";
 		my $http = $ua->get($api_url."token.html");
 		my $parsed = $html_tree->parse($http->decoded_content); 		# Build HTML tree of elements
@@ -304,11 +306,11 @@ sub set_priority {
 
 
 sub add_url {
-             my ($class,$url) = @_;
+             my ($class, $url) = @_;
              my @args;
              push @args, { action => 'add-url' };
              push @args, { 's' => $url };
-             api_query_result(@args);
+	     api_query_result(@args);
              return;
 }
 
@@ -343,13 +345,13 @@ sub add_file {
 sub api_query_result {
 			my (@params) = @_;
 			my $api = URI->new($api_url);
+			$api->query_param(token => $token);
 			for my $array_value (@params) {			
 							for my $key (keys %$array_value) {
-												$api->query_param_append($key => $$array_value{$key});
+									$api->query_param_append($key => $$array_value{$key});
 											 }			
 						       }
 
-			$api->query_param(token => $token);
 			my $http = $ua->get($api);
 			return $http->decoded_content;
 		      }
